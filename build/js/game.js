@@ -463,7 +463,7 @@
       var offsetTextX = 15;
       var offsetTextY = 10;
 
-      var fontSize = '16';
+      var fontSize = 16;
       //расстояние между строками по вертикали
       var distanceRowY = Math.floor(fontSize * 1.3);
 
@@ -483,7 +483,7 @@
         widthBlock, heightLeftEdge, heightRightEdge);
 
       //написать текст сообщения
-      this.ctx.font = fontSize + 'px PT Mono';
+      this.ctx.font = String(fontSize) + 'px PT Mono';
       this.ctx.textBaseline = 'hanging';
       this.ctx.fillStyle = '#000000';
       for (var i = 0; i < message.length; i++) {
