@@ -367,10 +367,128 @@
       if (evt.keyCode === 32) {
         evt.preventDefault();
         var needToRestartTheGame = this.state.currentStatus === Verdict.WIN ||
-            this.state.currentStatus === Verdict.FAIL;
+          this.state.currentStatus === Verdict.FAIL;
         this.initializeLevelAndStart(this.level, needToRestartTheGame);
 
         window.removeEventListener('keydown', this._pauseListener);
+      }
+    },
+
+    /**
+     * Нарисовать четырехугольник неправильной формы на canvas
+     * @param {number} x - координата Х левого верхнего угла
+     * @param {number} y - координата Y левого верхнего угла
+     * @param {string} color - цвет заливки четырехугольника
+     * @param {number} widthBlock - ширина четырехугольника
+     * @param {number} heightLeftEdge - высота левой стороны четырехугольника
+     * @param {number} heightRightEdge - высота правой стороны четырехугольника
+     * @private
+     */
+    _drawBlock: function(x, y, color, widthBlock, heightLeftEdge,
+      heightRightEdge) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x + widthBlock, y);
+      this.ctx.lineTo(x + widthBlock, y +
+        heightRightEdge);
+      this.ctx.lineTo(x, y + heightLeftEdge);
+      this.ctx.lineTo(x, y);
+      this.ctx.closePath();
+      this.ctx.stroke();
+      this.ctx.fillStyle = color;
+      this.ctx.fill();
+    },
+
+    /**
+     * Получить массив строк, вписываемых в блок заданной ширины, из строки-сообщения
+     * @param {string} message - строка-сообщение
+     * @param {number} widthBlock - ширина блока
+     * @return {[string]}
+     * @private
+     */
+    _getMassiveMessage: function(message, widthBlock) {
+      //количество пикселей на 1 символ
+      var countPixelsSymb = 10;
+      //количество символов в одной строке блока
+      var countSymbRow = Math.floor(widthBlock / countPixelsSymb) - 4;
+      var massiveMessage = [];
+      var words = message.split(' ');
+      if (words.length <= 1) {
+        return [message];
+      }
+      //текущая строка для добавления в массив строк
+      var currentLine = '';
+      for (var i = 0; i < words.length; i++) {
+        //если добавление пробела и нового слова к текущей строке превышает
+        //допустимую длину - в массив строк добавить текущую строку
+        if (currentLine.length + words[i].length + 1 > countSymbRow) {
+          massiveMessage.push(currentLine);
+          //начать формирование новой текущей строки - добавить в нее слово, превысившее лимит
+          currentLine = words[i];
+        } else { //если добавление нового слова к текущей строке не превышает лимит -
+          //продолжаем формировать текущую строку
+          if (currentLine.length === 0) {
+            currentLine = words[i];
+          } else {
+            currentLine = currentLine + ' ' + words[i];
+          }
+          //если после добавления нового слова в текущую строку количество символов в ней = лимиту -
+          //добавляем сформированную строку в массив
+          if (currentLine === countSymbRow) {
+            massiveMessage.push(currentLine);
+            currentLine = '';
+          }
+        }
+      }
+      //добавляем в массив остаток message
+      if (currentLine !== '') {
+        massiveMessage.push(currentLine);
+      }
+      return massiveMessage;
+    },
+
+    /**
+     * Нарисовать блок сообщения с заданной строкой сообщения
+     * с автоматическим переносом нужных строк
+     * и вычислением высоты четырехугольника в зависимости от высоты текста сообщения
+     * @param {string} strMessage - сообщение
+     * @private
+     */
+    _drawBlockMessage: function(strMessage) {
+      var widthBlock = 340;
+      //координаты четырехугольника с сообщением
+      var xStart = WIDTH / 2 - widthBlock / 2;
+      var yStart = 10;
+      //отступы для текста от границ четырехугольника
+      var offsetTextX = 15;
+      var offsetTextY = 10;
+
+      var fontSize = '16';
+      //расстояние между строками по вертикали
+      var distanceRowY = Math.floor(fontSize * 1.3);
+
+      //из строки получить массив строк, вписывающихся в блок заданной ширины
+      var message = this._getMassiveMessage(strMessage, widthBlock);
+
+      //рассчитать высоту блока
+      var heightLeftEdge = message.length * distanceRowY + offsetTextY *
+        2;
+      var heightRightEdge = Math.floor(heightLeftEdge * 1.2);
+
+      //нарисовать блок-тень
+      this._drawBlock(xStart + 10, yStart + 10, 'rgba(0, 0, 0, 0.7)',
+        widthBlock, heightLeftEdge, heightRightEdge);
+      //нарисовать основной блок
+      this._drawBlock(xStart, yStart, '#FFFFFF',
+        widthBlock, heightLeftEdge, heightRightEdge);
+
+      //написать текст сообщения
+      this.ctx.font = fontSize + 'px PT Mono';
+      this.ctx.textBaseline = 'hanging';
+      this.ctx.fillStyle = '#000000';
+      for (var i = 0; i < message.length; i++) {
+        this.ctx.fillText(message[i], xStart + offsetTextX, yStart +
+          offsetTextY + i * distanceRowY);
       }
     },
 
@@ -380,16 +498,24 @@
     _drawPauseScreen: function() {
       switch (this.state.currentStatus) {
         case Verdict.WIN:
-          console.log('you have won!');
+          this._drawBlockMessage(
+            'Ура! Вы выиграли! Поздравляем с победой!');
           break;
         case Verdict.FAIL:
-          console.log('you have failed!');
+          this._drawBlockMessage(
+            'Игра закончена. Вы проиграли. Не огорчайтесь - попробуйте снова.'
+          );
           break;
         case Verdict.PAUSE:
-          console.log('game is on pause!');
+          this._drawBlockMessage(
+            'Игра на паузе. Для продолжения игры нажмите пробел. Возвращайтесь быстрее.'
+          );
           break;
         case Verdict.INTRO:
-          console.log('welcome to the game! Press Space to start');
+          this._drawBlockMessage(
+            'Добро пожаловать в игру! В ней маг может ходить, летать ' +
+            'по нажатию на стрелки и стрелять фаерболом по нажатию на шифт. Нажмите пробел, чтобы начать игру.'
+          );
           break;
       }
     },
@@ -454,7 +580,8 @@
           sprite: 'img/fireball.gif',
           type: ObjectType.FIREBALL,
           width: 24,
-          x: me.direction & Direction.RIGHT ? me.x + me.width : me.x - 24,
+          x: me.direction & Direction.RIGHT ? me.x + me.width : me.x -
+            24,
           y: me.y + me.height / 2
         });
 
@@ -505,8 +632,8 @@
             })[0];
 
             return me.state === ObjectState.DISPOSED ?
-                Verdict.FAIL :
-                Verdict.CONTINUE;
+              Verdict.FAIL :
+              Verdict.CONTINUE;
           },
 
           /**
@@ -525,8 +652,8 @@
            */
           function checkTime(state) {
             return Date.now() - state.startTime > 3 * 60 * 1000 ?
-                Verdict.FAIL :
-                Verdict.CONTINUE;
+              Verdict.FAIL :
+              Verdict.CONTINUE;
           }
         ];
       }
@@ -573,10 +700,12 @@
       this.state.objects.forEach(function(object) {
         if (object.sprite) {
           var image = new Image(object.width, object.height);
-          image.src = (object.spriteReversed && object.direction & Direction.LEFT) ?
-              object.spriteReversed :
-              object.sprite;
-          this.ctx.drawImage(image, object.x, object.y, object.width, object.height);
+          image.src = (object.spriteReversed && object.direction &
+              Direction.LEFT) ?
+            object.spriteReversed :
+            object.sprite;
+          this.ctx.drawImage(image, object.x, object.y, object.width,
+            object.height);
         }
       }, this);
     },
