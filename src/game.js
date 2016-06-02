@@ -448,6 +448,63 @@
     },
 
     /**
+     * Получить координаты блока с сообщением в зависимости от положения мага
+     * @param {number} widthBlock - ширина блока
+     * @param {number} leftHeightBlock - высота левой стороны блока
+     * @param {number} rightHeightBlock - высота правой стороны блока
+     * @return
+     * @private
+     */
+    _getLocationMessageBlock: function(widthBlock, leftHeightBlock) {
+      //допустимые размеры области, где может выводиться блок с сообщением
+      var widhtArea = WIDTH;
+      var tree = document.querySelector('.header-tree');
+      if (tree) {
+        widhtArea = WIDTH - Math.floor(tree.clientWidth / 2);
+      }
+      //координаты блока
+      var location = {};
+      //найти мага
+      var me = this.state.objects.filter(function(object) {
+        return object.type === ObjectType.ME;
+      })[0];
+
+      if (me) {
+        //позиция сообщения по оси Х
+        location.x = me.x + me.width;
+        if (location.x + widthBlock > widhtArea) {
+          location.x = widhtArea - widthBlock;
+        }
+        if (location.x < 0) {
+          location.x = 0;
+        }
+        //позиция сообщения по оси Y
+        location.y = me.y - leftHeightBlock;
+
+        //минимальное значение по оси Y, чтобы сообщение не обрезалось и не закрывалось
+        if (location.y < 15) { //граница для yStart немного больше 0 из-за частичного наложения header-clouds
+          location.y = 15;
+        }
+        //в случае пересечения мага и сообщения (происходит при коррекции х и у в верхней части экрана)
+        //перенести сообщение под мага (под голову мага)
+        if (((me.x + me.width > location.x && me.x + me.width < location.x +
+              widthBlock) ||
+            (me.x > location.x && me.x < location.x + widthBlock)) &&
+          ((me.y > location.y && me.y < location.y + leftHeightBlock) ||
+            (me.y + me.height > location.y && me.y + me.height < location
+              .y +
+              leftHeightBlock))) {
+          location.y = me.y + Math.floor(me.height / 2) + 20;
+        }
+      } else {
+        location.x = Math.floor(widhtArea / 2) - Math.floor(widthBlock /
+          2);
+        location.y = 30;
+      }
+      return location;
+    },
+
+    /**
      * Нарисовать блок сообщения с заданной строкой сообщения
      * с автоматическим переносом нужных строк
      * и вычислением высоты четырехугольника в зависимости от высоты текста сообщения
@@ -456,13 +513,12 @@
      */
     _drawBlockMessage: function(strMessage) {
       var widthBlock = 340;
-      //координаты четырехугольника с сообщением
-      var xStart = WIDTH / 2 - widthBlock / 2;
-      var yStart = 10;
       //отступы для текста от границ четырехугольника
       var offsetTextX = 15;
       var offsetTextY = 10;
-
+      //отступы для блока-тени от блока-сообщения
+      var offsetShadowX = 10;
+      var offsetShadowY = 10;
       var fontSize = 16;
       //расстояние между строками по вертикали
       var distanceRowY = Math.floor(fontSize * 1.3);
@@ -471,15 +527,20 @@
       var message = this._getMassiveMessage(strMessage, widthBlock);
 
       //рассчитать высоту блока
-      var heightLeftEdge = message.length * distanceRowY + offsetTextY *
+      var heightRightEdge = message.length * distanceRowY + offsetTextY *
         2;
-      var heightRightEdge = Math.floor(heightLeftEdge * 1.2);
+      var heightLeftEdge = Math.floor(heightRightEdge * 1.2);
+
+      //получить начальные координаты блока-четырехугольника с сообщением
+      var coordinate = this._getLocationMessageBlock(widthBlock +
+        offsetShadowX, heightLeftEdge + offsetShadowY);
 
       //нарисовать блок-тень
-      this._drawBlock(xStart + 10, yStart + 10, 'rgba(0, 0, 0, 0.7)',
-        widthBlock, heightLeftEdge, heightRightEdge);
+      this._drawBlock(coordinate.x + offsetShadowX, coordinate.y +
+        offsetShadowY, 'rgba(0, 0, 0, 0.7)', widthBlock, heightLeftEdge,
+        heightRightEdge);
       //нарисовать основной блок
-      this._drawBlock(xStart, yStart, '#FFFFFF',
+      this._drawBlock(coordinate.x, coordinate.y, '#FFFFFF',
         widthBlock, heightLeftEdge, heightRightEdge);
 
       //написать текст сообщения
@@ -487,8 +548,8 @@
       this.ctx.textBaseline = 'hanging';
       this.ctx.fillStyle = '#000000';
       for (var i = 0; i < message.length; i++) {
-        this.ctx.fillText(message[i], xStart + offsetTextX, yStart +
-          offsetTextY + i * distanceRowY);
+        this.ctx.fillText(message[i], coordinate.x + offsetTextX,
+          coordinate.y + offsetTextY + i * distanceRowY);
       }
     },
 
