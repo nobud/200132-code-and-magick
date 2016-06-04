@@ -3,33 +3,79 @@
 (function() {
   var formContainer = document.querySelector('.overlay-container');
   var formOpenButton = document.querySelector('.reviews-controls-new');
-  var formCloseButton = document.querySelector('.review-form-close');
+  //форма для отправки отзыва
+  var reviewForm = document.querySelector('.review-form');
+  var formCloseButton = reviewForm.querySelector('.review-form-close');
   //имя
-  var reviewName = document.querySelector('#review-name');
+  var reviewName = reviewForm.querySelector('#review-name');
   //отзыв
-  var reviewText = document.querySelector('#review-text');
+  var reviewText = reviewForm.querySelector('#review-text');
   //массив радиобаттонов с оценками
-  var reviewMark = document.getElementsByName('review-mark');
+  var reviewMarks = reviewForm.elements['review-mark'];
+  var currentMark = reviewMarks.value;
+  //блок с метками-ссылками на незаполненные обязательные поля
+  var requiredFields = reviewForm.querySelector('.review-fields');
   //метка-"ссылка" на незаполненное обязательное поле Имя
-  var fieldRequiredName = document.querySelector('.review-fields-name');
+  var fieldRequiredName = reviewForm.querySelector('.review-fields-name');
   //метка-"ссылка" на незаполненное обязательное поле Отзыв
-  var fieldRequiredText = document.querySelector('.review-fields-text');
-  //блок с метками-"ссылками" на незаполненные обязательные поля
-  var requiredFields = document.querySelector('.review-fields');
+  var fieldRequiredText = reviewForm.querySelector('.review-fields-text');
   //кнопка Отправить
-  var btnReviewSubmit = document.querySelector('.review-submit');
+  var btnReviewSubmit = reviewForm.querySelector('.review-submit');
+  //объект с набором элементов, сообщающих о невалидности поля
+  var controlsTextWarning = {};
+
+  //создать элемент для сообщения о невалидности поля controlInvalid
+  var createControlTextWarning = function(controlInvalid) {
+    var controlWarning = document.createElement('div');
+    controlWarning.style.position = 'absolute';
+    controlWarning.style.fontSize = '0.7em';
+    controlWarning.style.padding = '3px 5px';
+    controlWarning.style.backgroundColor = 'rgb(184, 40, 50)';
+    controlWarning.style.color = '#FFFFFF';
+    controlInvalid.parentElement.appendChild(controlWarning);
+    controlWarning.classList.add('invisible');
+    controlsTextWarning[controlInvalid.name] = controlWarning;
+  };
+
+  createControlTextWarning(reviewName);
+  createControlTextWarning(reviewText);
+
+  //показать сообщение textMessage о невалидности поля controlInvalidName
+  var showMessageValidity = function(controlInvalidName, textMessage) {
+    controlsTextWarning[controlInvalidName].textContent = textMessage;
+    controlsTextWarning[controlInvalidName].classList.remove('invisible');
+  };
+
+  //скрыть сообщение о невалидности поля
+  var hideMessageValidity = function(controlInvalidName) {
+    controlsTextWarning[controlInvalidName].textContent = '';
+    controlsTextWarning[controlInvalidName].classList.add('invisible');
+  };
+
+  //управление доступностью кнопки Отправить
+  var setDisabilityBtnReviewSubmit = function() {
+    btnReviewSubmit.disabled = !reviewName.validity.valid ||
+      !reviewText.validity.valid;
+  };
+
+  //определение валидности контрола
+  var testValidity = function(control) {
+    if (!control.validity.valid) {
+      showMessageValidity(control.name, control.validationMessage);
+    } else {
+      hideMessageValidity(control.name);
+    }
+    setDisabilityBtnReviewSubmit();
+  };
 
   //логика назначения полю Отзыв атрибута required
-  var setReviewTextConstraint = function(flagSetRequired) {
-    if (flagSetRequired) {
-      reviewText.required = true;
-    } else {
-      reviewText.required = false;
-    }
+  var setReviewTextConstraint = function() {
+    reviewText.required = currentMark === '1' ||
+      currentMark === '2';
   };
 
   //управление видимостью метки-"ссылки" на незаполненное поле Отзыв
-  var setVisibilityfieldRequiredText = function() {
+  var setVisibilityFieldRequiredText = function() {
     if (reviewText.required && !reviewText.value) {
       fieldRequiredText.classList.remove('invisible');
     } else {
@@ -39,7 +85,7 @@
   };
 
   //управление видимостью метки-"ссылки" на обязательное незаполненное поле Имя
-  var setVisibilityfieldRequiredName = function() {
+  var setVisibilityFieldRequiredName = function() {
     if (reviewName.value) {
       fieldRequiredName.classList.add('invisible');
     } else {
@@ -56,41 +102,38 @@
     } else {
       requiredFields.classList.remove('invisible');
     }
-    setDisabilityBtnReviewSubmit();
   };
 
-  //управление доступностью кнопки Отправить
-  var setDisabilityBtnReviewSubmit = function() {
-    if (requiredFields.classList.contains('invisible')) {
-      btnReviewSubmit.disabled = false;
-    } else {
-      btnReviewSubmit.disabled = true;
-    }
+  //обработчик изменения оценки
+  var changeMark = function() {
+    currentMark = reviewMarks.value;
+    setReviewTextConstraint();
+    setVisibilityFieldRequiredText();
+    testValidity(reviewText);
   };
 
   reviewName.required = true;
 
-  //назначение события onchange для оценок
-  for (var i = 0; i < reviewMark.length; i++) {
-    reviewMark[i].onchange = function(evt) {
-      setReviewTextConstraint(evt.currentTarget.value === '1' || evt.currentTarget
-        .value === '2');
-      setVisibilityfieldRequiredText();
-    };
+  //назначение обработчика события onchange для оценок
+  for (var i = 0; i < reviewMarks.length; i++) {
+    reviewMarks[i].onchange = changeMark;
   }
 
   reviewName.oninput = function() {
-    setVisibilityfieldRequiredName();
+    setVisibilityFieldRequiredName();
+    testValidity(this);
   };
 
   reviewText.oninput = function() {
-    setVisibilityfieldRequiredText();
+    setVisibilityFieldRequiredText();
+    testValidity(this);
   };
 
-  setReviewTextConstraint(reviewMark[0].checked || reviewMark[1].checked);
-  setVisibilityfieldRequiredName();
-  setVisibilityfieldRequiredText();
-  setVisibilityfieldRequiredText();
+  setReviewTextConstraint();
+  setVisibilityFieldRequiredName();
+  setVisibilityFieldRequiredText();
+  testValidity(reviewName);
+  testValidity(reviewText);
 
   formOpenButton.onclick = function(evt) {
     evt.preventDefault();
