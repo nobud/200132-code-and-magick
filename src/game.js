@@ -452,7 +452,7 @@
      * @param {number} widthBlock - ширина блока
      * @param {number} leftHeightBlock - высота левой стороны блока
      * @param {number} rightHeightBlock - высота правой стороны блока
-     * @return
+     * @return {Object}
      * @private
      */
     _getLocationMessageBlock: function(widthBlock, leftHeightBlock) {
