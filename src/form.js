@@ -1,6 +1,7 @@
 'use strict';
 
 (function() {
+  var browserCookies = require('browser-cookies');
   var formContainer = document.querySelector('.overlay-container');
   var formOpenButton = document.querySelector('.reviews-controls-new');
   //форма для отправки отзыва
@@ -12,6 +13,7 @@
   var reviewText = reviewForm.querySelector('#review-text');
   //массив радиобаттонов с оценками
   var reviewMarks = reviewForm.elements['review-mark'];
+  //текущая оценка
   var currentMark = reviewMarks.value;
   //блок с метками-ссылками на незаполненные обязательные поля
   var requiredFields = reviewForm.querySelector('.review-fields');
@@ -23,6 +25,32 @@
   var btnReviewSubmit = reviewForm.querySelector('.review-submit');
   //объект с набором элементов, сообщающих о невалидности поля
   var controlsTextWarning = {};
+
+  //вычислить срок жизни cookies
+  //как количество дней, прошедшее с момента последнего ДР (fromDay.fromMonth.fromYear)
+  var getPeriodToExpireCookie = function() {
+    var currentDate = new Date(Date.now());
+    var fromDay = '17';
+    var fromMonth = '09';
+    var fromYear = currentDate.getFullYear();
+    var fromDate = new Date(String(fromYear) + '-' + fromMonth + '-' +
+      fromDay);
+    if (currentDate - fromDate < 0) {
+      fromDate = new Date(String(fromYear - 1) + '-' + fromMonth + '-' +
+        fromDay);
+    }
+    return currentDate - fromDate;
+  };
+
+  //сохранить оценку и имя пользователя в cookies
+  var setFormCookies = function(dateToExpire) {
+    browserCookies.set('mark', currentMark, {
+      expires: dateToExpire
+    });
+    browserCookies.set('name', reviewName.value, {
+      expires: dateToExpire
+    });
+  };
 
   //создать элемент для сообщения о невалидности поля controlInvalid
   var createControlTextWarning = function(controlInvalid) {
@@ -36,9 +64,6 @@
     controlWarning.classList.add('invisible');
     controlsTextWarning[controlInvalid.name] = controlWarning;
   };
-
-  createControlTextWarning(reviewName);
-  createControlTextWarning(reviewText);
 
   //показать сообщение textMessage о невалидности поля controlInvalidName
   var showMessageValidity = function(controlInvalidName, textMessage) {
@@ -112,36 +137,56 @@
     testValidity(reviewText);
   };
 
-  reviewName.required = true;
-
   //назначение обработчика события onchange для оценок
   for (var i = 0; i < reviewMarks.length; i++) {
     reviewMarks[i].onchange = changeMark;
   }
 
+  //назначение обработчика события oninput поля ввода имени пользователя
   reviewName.oninput = function() {
     setVisibilityFieldRequiredName();
     testValidity(this);
   };
 
+  //назначение обработчика события oninput поля ввода отзыва
   reviewText.oninput = function() {
     setVisibilityFieldRequiredText();
     testValidity(this);
   };
+
+  //назначение обработчика события onsubmit для формы
+  reviewForm.onsubmit = function() {
+    setFormCookies(Date.now() + getPeriodToExpireCookie());
+  };
+
+  //назначение обработчика события onclick для кнопки, показавающей форму заполнения отзыва
+  formOpenButton.onclick = function(evt) {
+    evt.preventDefault();
+    formContainer.classList.remove('invisible');
+  };
+
+  //назначение обработчика события onclick для кнопки закрытия формы
+  formCloseButton.onclick = function(evt) {
+    evt.preventDefault();
+    formContainer.classList.add('invisible');
+  };
+
+  //получить оценку из cookies
+  reviewMarks.value = browserCookies.get('mark') || 5;
+  currentMark = reviewMarks.value;
+
+  //получить имя пользователя из cookies
+  reviewName.value = browserCookies.get('name');
+
+  //создать элементы для сообщения о невалидности обязательных полей
+  createControlTextWarning(reviewName);
+  createControlTextWarning(reviewText);
+
+  reviewName.required = true;
 
   setReviewTextConstraint();
   setVisibilityFieldRequiredName();
   setVisibilityFieldRequiredText();
   testValidity(reviewName);
   testValidity(reviewText);
-
-  formOpenButton.onclick = function(evt) {
-    evt.preventDefault();
-    formContainer.classList.remove('invisible');
-  };
-
-  formCloseButton.onclick = function(evt) {
-    evt.preventDefault();
-    formContainer.classList.add('invisible');
-  };
 })();
