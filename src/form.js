@@ -11,10 +11,10 @@
   var reviewName = reviewForm.querySelector('#review-name');
   //отзыв
   var reviewText = reviewForm.querySelector('#review-text');
-  //массив радиобаттонов с оценками
+  //коллекция радиобаттонов с оценками
   var reviewMarks = reviewForm.elements['review-mark'];
   //текущая оценка
-  var currentMark = reviewMarks.value;
+  var currentMark;
   //блок с метками-ссылками на незаполненные обязательные поля
   var requiredFields = reviewForm.querySelector('.review-fields');
   //метка-"ссылка" на незаполненное обязательное поле Имя
@@ -29,15 +29,13 @@
   //вычислить срок жизни cookies
   //как количество дней, прошедшее с момента последнего ДР (fromDay.fromMonth.fromYear)
   var getPeriodToExpireCookie = function() {
-    var currentDate = new Date(Date.now());
-    var fromDay = '17';
-    var fromMonth = '09';
+    var currentDate = new Date();
+    var fromDay = 17;
+    var fromMonth = 8; //нумерация месяцев с 0
     var fromYear = currentDate.getFullYear();
-    var fromDate = new Date(String(fromYear) + '-' + fromMonth + '-' +
-      fromDay);
+    var fromDate = new Date(fromYear, fromMonth, fromDay);
     if (currentDate - fromDate < 0) {
-      fromDate = new Date(String(fromYear - 1) + '-' + fromMonth + '-' +
-        fromDay);
+      fromDate = new Date(fromYear - 1, fromMonth, fromDay);
     }
     return currentDate - fromDate;
   };
@@ -130,8 +128,8 @@
   };
 
   //обработчик изменения оценки
-  var changeMark = function() {
-    currentMark = reviewMarks.value;
+  var changeMark = function(evt) {
+    currentMark = evt.target.value;
     setReviewTextConstraint();
     setVisibilityFieldRequiredText();
     testValidity(reviewText);
@@ -156,7 +154,7 @@
 
   //назначение обработчика события onsubmit для формы
   reviewForm.onsubmit = function() {
-    setFormCookies(Date.now() + getPeriodToExpireCookie());
+    setFormCookies(new Date(Date.now() + getPeriodToExpireCookie()));
   };
 
   //назначение обработчика события onclick для кнопки, показавающей форму заполнения отзыва
@@ -171,18 +169,17 @@
     formContainer.classList.add('invisible');
   };
 
-  //получить оценку из cookies
-  reviewMarks.value = browserCookies.get('mark') || 5;
-  currentMark = reviewMarks.value;
-
   //получить имя пользователя из cookies
   reviewName.value = browserCookies.get('name');
+  reviewName.required = true;
 
   //создать элементы для сообщения о невалидности обязательных полей
   createControlTextWarning(reviewName);
   createControlTextWarning(reviewText);
 
-  reviewName.required = true;
+  //получить оценку из cookies
+  currentMark = browserCookies.get('mark') || 5;
+  reviewMarks[currentMark - 1].checked = true;
 
   setReviewTextConstraint();
   setVisibilityFieldRequiredName();
