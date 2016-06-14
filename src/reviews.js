@@ -14,8 +14,7 @@ var ratingClasses = {
 };
 
 /** @constant {number} */
-var IMAGE_LOAD_TIMEOUT = 10000;
-
+var LOAD_TIMEOUT = 10000;
 
 /** @constant {string} */
 var REVIEWS_LOAD_URL = 'http://o0.github.io/assets/json/reviews.json';
@@ -53,6 +52,8 @@ var getReviewElement = function(data, container) {
   var element = elementToClone.cloneNode(true);
   var rating = element.querySelector('.review-rating');
   rating.classList.add(ratingClasses[data.rating]);
+  var reviewText = element.querySelector('.review-text');
+  var reviewQuiz = element.querySelector('.review-quiz');
 
   var imgDOMElement = element.querySelector('img.review-author');
   var authorImage = new Image();
@@ -75,26 +76,41 @@ var getReviewElement = function(data, container) {
   imageLoadTimeout = setTimeout(function() {
     authorImage.src = '';
     element.classList.add('review-load-failure');
-  }, IMAGE_LOAD_TIMEOUT);
+  }, LOAD_TIMEOUT);
 
-  element.querySelector('.review-text').textContent =
-    data.author.name + ' (' + data.date + ')' + ':\n' +
+  reviewText.textContent = data.author.name + ' (' + data.date + '): ' +
     data.description;
+  reviewQuiz.innerHTML = '(' + data.review_usefulness +
+    ')' + reviewQuiz.innerHTML;
   container.appendChild(element);
   return element;
 };
 
+var notifyErrorLoadingReviews = function() {
+  sectionReviews.classList.remove('reviews-list-loading');
+  sectionReviews.classList.add('reviews-load-failure');
+};
+
 /** @param {function(Array.<Object>)} callback */
 var getReviews = function(callback) {
-  sectionReviews.classList.add('reviews-list-loading');
   var xhr = new XMLHttpRequest();
   /** @param {ProgressEvent} */
   xhr.onload = function(evt) {
-    var loadedData = JSON.parse(evt.target.response);
-    callback(loadedData);
-    sectionReviews.classList.remove('reviews-list-loading');
+    if (xhr.status === 200) {
+      var loadedData = JSON.parse(evt.target.response);
+      callback(loadedData);
+      sectionReviews.classList.remove('reviews-list-loading');
+    } else {
+      notifyErrorLoadingReviews();
+    }
+
+  };
+  xhr.timeout = LOAD_TIMEOUT;
+  xhr.ontimeout = xhr.onerror = function() {
+    notifyErrorLoadingReviews();
   };
 
+  sectionReviews.classList.add('reviews-list-loading');
   xhr.open('GET', REVIEWS_LOAD_URL);
   xhr.send();
 };
@@ -120,21 +136,35 @@ var getFilteredReviews = function(reviews, filter) {
       reviewsToFilter = reviewsToFilter.filter(function(review) {
         var msInDay = 24 * 60 * 60 * 1000;
         var countDay = Math.ceil((new Date().setHours(0, 0, 0, 0) - new Date(
-            review.date).setHours(0, 0, 0, 0)) /
-          msInDay);
+          review.date).setHours(0, 0, 0, 0)) / msInDay);
         return countDay <= RECENT_DAYS;
       }).sort(function(a, b) {
-        return new Date(a.date).setHours(0, 0, 0, 0) - new Date(b.date).setHours(
+        //сортировка по убыванию даты
+        return new Date(b.date).setHours(0, 0, 0, 0) - new Date(a.date).setHours(
           0, 0, 0, 0);
       });
       break;
     case Filter.GOOD:
+      reviewsToFilter = reviewsToFilter.filter(function(review) {
+        return review.rating >= 3;
+      }).sort(function(a, b) {
+        //сортировка по убыванию рейтинга
+        return b.rating - a.rating;
+      });
       break;
     case Filter.BAD:
-
+      reviewsToFilter = reviewsToFilter.filter(function(review) {
+        return review.rating <= 2;
+      }).sort(function(a, b) {
+        //сортировка по возрастанию рейтинга
+        return a.rating - b.rating;
+      });
       break;
     case Filter.POPULAR:
-
+      reviewsToFilter = reviewsToFilter.sort(function(a, b) {
+        //сортировка по убыванию оценки пользы отзыва
+        return b.review_usefulness - a.review_usefulness;
+      });
       break;
     case Filter.ALL: //показать список отзывов в том виде, в каком он был загружен
     default:
