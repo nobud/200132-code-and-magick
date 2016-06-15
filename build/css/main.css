@@ -194,6 +194,12 @@ main {
   cursor: pointer;
 }
 
+.reviews-filter-item-disabled {
+  color: #C0C0C0;
+  border-bottom: none;
+  cursor: default;
+}
+
 .reviews-filter input {
   position: absolute;
   left: -1200em;
