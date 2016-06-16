@@ -194,6 +194,12 @@ main {
   cursor: pointer;
 }
 
+.reviews-filter-item-disabled {
+  color: #C0C0C0;
+  border-bottom: none;
+  cursor: default;
+}
+
 .reviews-filter input {
   position: absolute;
   left: -1200em;
@@ -224,7 +230,8 @@ input[type=radio]:checked + .reviews-filter-item {
 }
 
 .reviews-list-loading,
-.reviews-load-failure {
+.reviews-load-failure,
+.notify-message {
   padding-bottom: 40px;
 
   text-align: center;
