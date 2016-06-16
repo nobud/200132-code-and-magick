@@ -118,13 +118,11 @@
   </article>
 </template>
 
-<script>
-  var reviews = [];
-  var __reviewsLoadCallback = function(data) {
-    reviews = data;
-  };
-</script>
-<script src="http://up.htmlacademy.ru/assets/js_intensive/jsonp/reviews.js"></script>
+<template id="empty-filter-results-template" style="display: none">
+  <section class="notify-message">
+    <p class="notify-message-text"></p>
+  </section>
+</template>
 
 <script src="js/main.js"></script>
 
