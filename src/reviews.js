@@ -3,6 +3,7 @@ var formReviewsFilter = document.querySelector('.reviews-filter');
 var reviewsList = document.querySelector('.reviews-list');
 var templateElement = document.querySelector('#review-template');
 var templateMessage = document.querySelector('#empty-filter-results-template');
+var moreReviews = document.querySelector('.reviews-controls-more');
 var elementToClone;
 var messageToClone;
 var ratingClasses = {
@@ -20,7 +21,10 @@ var LOAD_TIMEOUT = 10000;
 var REVIEWS_LOAD_URL = 'http://o0.github.io/assets/json/reviews.json';
 
 /** @type {Array.<Object>} */
-var pageReviews = [];
+var allReviews = [];
+
+/** @type {Array.<Object>} */
+var filteredReviews = [];
 
 /** @enum {number} */
 var Filter = {
@@ -44,9 +48,17 @@ var NOTIFY_EMPTY_FILTER_TEXT =
 /** @constant {string} */
 var CLASS_FILTER_DISABLED = 'reviews-filter-item-disabled';
 
+/** @constant {string} */
 var CLASS_REVIEW_LOADING = 'reviews-list-loading';
 
+/** @constant {string} */
 var CLASS_REVIEW_LOAD_FAILURE = 'review-load-failure';
+
+/** @constant {number}*/
+var PAGE_SIZE = 3;
+
+/** @type {number}*/
+var pageNumber = 0;
 
 /**
  * @param {HTMLElement} elementTemplate
@@ -107,6 +119,23 @@ var notifyErrorLoadingReviews = function() {
   reviewsList.classList.add(CLASS_REVIEW_LOAD_FAILURE);
 };
 
+//проверка: доступна ли следующая страница
+/**
+ * @param {Array} reviews
+ * @param {number} page
+ * @param {number} pageSize
+ * @return {boolean}
+ */
+var isNextPageAvailable = function(reviews, page, pageSize) {
+  return page < Math.ceil(reviews.length / pageSize);
+};
+
+var setMoreReviewsEnabled = function() {
+  moreReviews.addEventListener('click', function() {
+    renderReviews(filteredReviews, pageNumber);
+  });
+};
+
 /** @param {function(Array.<Object>)} callback */
 var getReviews = function(callback) {
   var xhr = new XMLHttpRequest();
@@ -129,18 +158,36 @@ var getReviews = function(callback) {
   xhr.send();
 };
 
-/** @param {Array.<Object>} reviews */
-var renderReviews = function(reviews) {
-  clearListReview();
-  reviews.forEach(function(review) {
+/**
+ * @param {Array.<Object>} reviews
+ * @param {number} page - нумерация страниц с 0
+ * @param {boolean} reset - признак перезаписи содержимого контейнера
+ */
+var renderReviews = function(reviews, page, reset) {
+  if (reset) {
+    pageNumber = 0;
+    clearListReview();
+  }
+  var from = page * PAGE_SIZE;
+  var to = from + PAGE_SIZE;
+  reviews.slice(from, to).forEach(function(review) {
     getReviewElement(review, reviewsList);
   });
+
+  pageNumber++;
+  if (isNextPageAvailable(reviews, pageNumber, PAGE_SIZE)) {
+    moreReviews.classList.remove('invisible');
+  } else {
+    moreReviews.classList.add('invisible');
+  }
 };
 
-/** @param {Array.<Object>} reviews */
-/* @param {HTMLElement} container   */
-/* @param {string} text             */
-/* @return {HTMLElement}            */
+/**
+ * @param {Array.<Object>} reviews
+ * @param {HTMLElement} container
+ * @param {string} text
+ * @return {HTMLElement}
+ */
 var showMessage = function(container, text) {
   container.innerHTML = '';
   var message = messageToClone.cloneNode(true);
@@ -151,7 +198,7 @@ var showMessage = function(container, text) {
 };
 
 /**
- * @param {Array.<Object>} hotels
+ * @param {Array.<Object>} reviews
  * @param {string} filter
  */
 var getFilteredReviews = function(reviews, filter) {
@@ -160,8 +207,8 @@ var getFilteredReviews = function(reviews, filter) {
     case Filter.RECENT:
       reviewsToFilter = reviewsToFilter.filter(function(review) {
         var msInDay = 24 * 60 * 60 * 1000;
-        var countDay = Math.ceil((new Date().setHours(0, 0, 0, 0) - new Date(
-          review.date).setHours(0, 0, 0, 0)) / msInDay);
+        var countDay = Math.ceil((new Date().setHours(0, 0, 0, 0) -
+          new Date(review.date).setHours(0, 0, 0, 0)) / msInDay);
         return countDay <= RECENT_DAYS;
       }).sort(function(a, b) {
         //сортировка по убыванию даты
@@ -211,7 +258,7 @@ var setDisabilityEmptyFilter = function(filterElement, disabled) {
 var getCountFilteredReviews = function() {
   for (var item in Filter) {
     if (Filter.hasOwnProperty(item)) {
-      var len = getFilteredReviews(pageReviews, Filter[item]).length;
+      var len = getFilteredReviews(allReviews, Filter[item]).length;
       var filterElement = formReviewsFilter.querySelector('label[for=' +
         Filter[item] + ']');
       filterElement.innerHTML = filterElement.innerHTML + '<sup> ' + len +
@@ -227,27 +274,28 @@ var clearListReview = function() {
   reviewsList.innerHTML = '';
 };
 
-/** обработчик изменения фильтра */
-/* @param {string} filter */
+/** обработчик изменения фильтра
+ * @param {string} filter
+ */
 var setFilter = function(filter) {
-  var filteredReviews = getFilteredReviews(pageReviews, filter);
+  filteredReviews = getFilteredReviews(allReviews, filter);
   if (filteredReviews.length) {
-    renderReviews(filteredReviews);
+    pageNumber = 0;
+    renderReviews(filteredReviews, pageNumber, true);
   } else { //если ни один элемент из списка не подходит под выбранные критерии фильтрации
     showMessage(reviewsList, NOTIFY_EMPTY_FILTER_TEXT);
   }
 };
 
-/** установить обработчик изменения фильтра */
-/* @param {boolean} enabled */
-var setFiltrationEnabled = function(enabled) {
-  //массив фильтров отзывов
-  var filters = formReviewsFilter.elements['reviews'];
-  for (var i = 0; i < filters.length; i++) {
-    filters[i].onchange = enabled ? function() {
-      setFilter(this.id);
-    } : null;
-  }
+/** установить обработчик изменения фильтра
+ * @param {boolean} enabled
+ */
+var setFiltrationEnabled = function() {
+  formReviewsFilter.addEventListener('click', function(evt) {
+    if (evt.target.name === 'reviews') {
+      setFilter(evt.target.id);
+    }
+  });
 };
 
 elementToClone = getElementToClone(templateElement, '.review');
@@ -256,11 +304,13 @@ messageToClone = getElementToClone(templateMessage, '.notify-message');
 formReviewsFilter.classList.add('invisible');
 
 getReviews(function(loadedReviews) {
-  pageReviews = loadedReviews;
+  allReviews = loadedReviews;
   setFiltrationEnabled(true);
-  if (pageReviews.length) {
+  if (allReviews.length) {
     setFilter(DEFAULT_FILTER);
-    formReviewsFilter.querySelector('#' + DEFAULT_FILTER).checked = true;
+    formReviewsFilter.querySelector('#' + DEFAULT_FILTER).checked =
+      true;
+    setMoreReviewsEnabled();
   }
   getCountFilteredReviews();
 });
