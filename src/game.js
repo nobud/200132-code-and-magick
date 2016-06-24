@@ -5,6 +5,15 @@
    * @const
    * @type {number}
    */
+  var THROTTLE_DELAY = 100;
+  var lastCall = Date.now();
+  //начало диапазона a в шкале [a; 1]
+  var rangeStart = 0;
+
+  /**
+   * @const
+   * @type {number}
+   */
   var HEIGHT = 300;
 
   /**
@@ -255,6 +264,7 @@
 
     this._onKeyDown = this._onKeyDown.bind(this);
     this._onKeyUp = this._onKeyUp.bind(this);
+    this._onscroll = this._onscroll.bind(this);
     this._pauseListener = this._pauseListener.bind(this);
   };
 
@@ -855,16 +865,79 @@
       }
     },
 
+    /**
+     * @param {HTMLElement} elem
+     */
+    isVisibleElement: function(element) {
+      var positionElem = element.getBoundingClientRect();
+      return (positionElem.bottom >= 0);
+    },
+
+    /**
+     * @param {number} scrollTop
+     * @param {HTMLElement} element
+     */
+    changePositionElement: function(scrollY, element) {
+      var maxScroll = element.clientHeight;
+      var backgroundPos =
+        window.getComputedStyle(element).backgroundPosition.split(' ');
+      //позиция a в шкале [a; 1]
+      if (!rangeStart) {
+        rangeStart = parseInt(backgroundPos[0], 10) / 100.0;
+      }
+      //проецирование текущего положения скролла в позицию бэкграунда
+      var xPos = (rangeStart + rangeStart * scrollY / maxScroll) *
+        100;
+      var yPos = parseInt(backgroundPos[1], 10);
+      element.style.backgroundPosition = xPos + '% ' + yPos + '%';
+    },
+
+    /**
+     * @return {bool}
+     */
+    resetParallax: function() {
+      var result = false;
+      if (Date.now() - lastCall >= THROTTLE_DELAY) {
+        var visibleGame = this.isVisibleElement(document.querySelector(
+          '.demo'));
+        var clouds = document.querySelector('.header-clouds');
+        var visibleClouds = this.isVisibleElement(clouds);
+        if (!visibleGame) {
+          game.setGameStatus(window.Game.Verdict.PAUSE);
+          //установить облака в начальную позицию
+          this.changePositionElement(0, clouds);
+        }
+        result = !visibleGame || !visibleClouds;
+        lastCall = Date.now();
+      }
+      return result;
+    },
+
+    /**
+     * @private
+     */
+    _onscroll: function() {
+      if (!this.resetParallax()) {
+        var currentTop = window.pageYOffset ||
+          document.documentElement.scrollTop;
+        //функция изменения позиции облаков
+        this.changePositionElement(currentTop, document.querySelector(
+          '.header-clouds'));
+      }
+    },
+
     /** @private */
     _initializeGameListeners: function() {
       window.addEventListener('keydown', this._onKeyDown);
       window.addEventListener('keyup', this._onKeyUp);
+      window.addEventListener('scroll', this._onscroll);
     },
 
     /** @private */
     _removeGameListeners: function() {
       window.removeEventListener('keydown', this._onKeyDown);
       window.removeEventListener('keyup', this._onKeyUp);
+      window.removeEventListener('scroll', this._onscroll);
     }
   };
 

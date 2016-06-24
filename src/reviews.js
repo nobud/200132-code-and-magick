@@ -6,6 +6,8 @@ var templateMessage = document.querySelector('#empty-filter-results-template');
 var moreReviews = document.querySelector('.reviews-controls-more');
 var elementToClone;
 var messageToClone;
+
+/** @enum {string} */
 var ratingClasses = {
   '1': 'review-rating',
   '2': 'review-rating-two',
@@ -26,7 +28,7 @@ var allReviews = [];
 /** @type {Array.<Object>} */
 var filteredReviews = [];
 
-/** @enum {number} */
+/** @enum {string} */
 var Filter = {
   'ALL': 'reviews-all',
   'RECENT': 'reviews-recent',
