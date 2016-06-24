@@ -897,27 +897,40 @@
      */
     resetParallax: function() {
       var result = false;
-      if (Date.now() - lastCall >= THROTTLE_DELAY) {
-        var visibleGame = this.isVisibleElement(document.querySelector(
-          '.demo'));
-        var clouds = document.querySelector('.header-clouds');
-        var visibleClouds = this.isVisibleElement(clouds);
-        if (!visibleGame) {
-          game.setGameStatus(window.Game.Verdict.PAUSE);
-          //установить облака в начальную позицию
-          this.changePositionElement(0, clouds);
-        }
-        result = !visibleGame || !visibleClouds;
-        lastCall = Date.now();
+      var visibleGame = this.isVisibleElement(document.querySelector(
+        '.demo'));
+      var clouds = document.querySelector('.header-clouds');
+      var visibleClouds = this.isVisibleElement(clouds);
+      if (!visibleGame) {
+        game.setGameStatus(window.Game.Verdict.PAUSE);
+        //установить облака в начальную позицию
+        this.changePositionElement(0, clouds);
       }
+      result = !visibleGame || !visibleClouds;
       return result;
+    },
+
+    throttle: function(method, period, scope) {
+      return function() {
+        var result = false;
+        if (Date.now() - lastCall >= period) {
+          result = method.call(scope);
+          lastCall = Date.now();
+        }
+        return result;
+      };
+    },
+
+    optimizedResetParallax: function() {
+      this.throttle(this.resetParallax,
+        THROTTLE_DELAY, this);
     },
 
     /**
      * @private
      */
     _onscroll: function() {
-      if (!this.resetParallax()) {
+      if (!this.optimizedResetParallax()) {
         var currentTop = window.pageYOffset ||
           document.documentElement.scrollTop;
         //функция изменения позиции облаков
