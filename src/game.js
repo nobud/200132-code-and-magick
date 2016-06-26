@@ -1,12 +1,14 @@
 'use strict';
 
 (function() {
+  var utils = require('./utils');
+
   /**
    * @const
    * @type {number}
    */
   var THROTTLE_DELAY = 100;
-  var lastCall = Date.now();
+
   //начало диапазона a в шкале [a; 1]
   var rangeStart = 0;
 
@@ -910,19 +912,8 @@
       return result;
     },
 
-    throttle: function(method, period, scope) {
-      return function() {
-        var result = false;
-        if (Date.now() - lastCall >= period) {
-          result = method.call(scope);
-          lastCall = Date.now();
-        }
-        return result;
-      };
-    },
-
     optimizedResetParallax: function() {
-      this.throttle(this.resetParallax,
+      utils.throttle(this.resetParallax,
         THROTTLE_DELAY, this);
     },
 
@@ -954,10 +945,15 @@
     }
   };
 
-  window.Game = Game;
-  window.Game.Verdict = Verdict;
+  var game;
+  var createGameProcess = function() {
+    window.Game = Game;
+    window.Game.Verdict = Verdict;
 
-  var game = new Game(document.querySelector('.demo'));
-  game.initializeLevelAndStart();
-  game.setGameStatus(window.Game.Verdict.INTRO);
+    game = new Game(document.querySelector('.demo'));
+    game.initializeLevelAndStart();
+    game.setGameStatus(window.Game.Verdict.INTRO);
+  };
+
+  module.exports = createGameProcess;
 })();
