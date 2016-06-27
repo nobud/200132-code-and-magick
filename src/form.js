@@ -2,6 +2,7 @@
 
 (function() {
   var browserCookies = require('browser-cookies');
+
   var formContainer = document.querySelector('.overlay-container');
   var formOpenButton = document.querySelector('.reviews-controls-new');
   //форма для отправки отзыва
@@ -11,6 +12,10 @@
   var reviewName = reviewForm.querySelector('#review-name');
   //отзыв
   var reviewText = reviewForm.querySelector('#review-text');
+
+  //контейнер с оценками
+  var groupReviewMarks = reviewForm.querySelector('.review-form-group-mark');
+
   //коллекция радиобаттонов с оценками
   var reviewMarks = reviewForm.elements['review-mark'];
   //текущая оценка
@@ -135,55 +140,65 @@
     testValidity(reviewText);
   };
 
-  //назначение обработчика события onchange для оценок
-  for (var i = 0; i < reviewMarks.length; i++) {
-    reviewMarks[i].onchange = changeMark;
-  }
+  var setEventListeners = function() {
+    // назначение обработчика события onchange для оценок
+    groupReviewMarks.addEventListener('change', function(evt) {
+      if (evt.target.name === 'review-mark') {
+        changeMark(evt);
+      }
+    });
 
-  //назначение обработчика события oninput поля ввода имени пользователя
-  reviewName.oninput = function() {
+    //назначение обработчика события oninput поля ввода имени пользователя
+    reviewName.addEventListener('input', function(evt) {
+      setVisibilityFieldRequiredName();
+      testValidity(evt.target);
+    });
+
+    //назначение обработчика события oninput поля ввода отзыва
+    reviewText.addEventListener('input', function(evt) {
+      setVisibilityFieldRequiredText();
+      testValidity(evt.target);
+    });
+
+    //назначение обработчика события onsubmit для формы
+    reviewForm.addEventListener('submit', function() {
+      setFormCookies(new Date(Date.now() + getPeriodToExpireCookie()));
+    });
+
+    //назначение обработчика события onclick для кнопки, показавающей форму заполнения отзыва
+    formOpenButton.addEventListener('click', function(evt) {
+      evt.preventDefault();
+      formContainer.classList.remove('invisible');
+    });
+
+    //назначение обработчика события onclick для кнопки закрытия формы
+    formCloseButton.addEventListener('click', function(evt) {
+      evt.preventDefault();
+      formContainer.classList.add('invisible');
+    });
+  };
+
+  var createFormNewReview = function() {
+    setEventListeners();
+
+    //получить имя пользователя из cookies
+    reviewName.value = browserCookies.get('name');
+    reviewName.required = true;
+
+    //создать элементы для сообщения о невалидности обязательных полей
+    createControlTextWarning(reviewName);
+    createControlTextWarning(reviewText);
+
+    //получить оценку из cookies
+    currentMark = browserCookies.get('mark') || 5;
+    reviewMarks[currentMark - 1].checked = true;
+
+    setReviewTextConstraint();
     setVisibilityFieldRequiredName();
-    testValidity(this);
-  };
-
-  //назначение обработчика события oninput поля ввода отзыва
-  reviewText.oninput = function() {
     setVisibilityFieldRequiredText();
-    testValidity(this);
+    testValidity(reviewName);
+    testValidity(reviewText);
   };
 
-  //назначение обработчика события onsubmit для формы
-  reviewForm.onsubmit = function() {
-    setFormCookies(new Date(Date.now() + getPeriodToExpireCookie()));
-  };
-
-  //назначение обработчика события onclick для кнопки, показавающей форму заполнения отзыва
-  formOpenButton.onclick = function(evt) {
-    evt.preventDefault();
-    formContainer.classList.remove('invisible');
-  };
-
-  //назначение обработчика события onclick для кнопки закрытия формы
-  formCloseButton.onclick = function(evt) {
-    evt.preventDefault();
-    formContainer.classList.add('invisible');
-  };
-
-  //получить имя пользователя из cookies
-  reviewName.value = browserCookies.get('name');
-  reviewName.required = true;
-
-  //создать элементы для сообщения о невалидности обязательных полей
-  createControlTextWarning(reviewName);
-  createControlTextWarning(reviewText);
-
-  //получить оценку из cookies
-  currentMark = browserCookies.get('mark') || 5;
-  reviewMarks[currentMark - 1].checked = true;
-
-  setReviewTextConstraint();
-  setVisibilityFieldRequiredName();
-  setVisibilityFieldRequiredText();
-  testValidity(reviewName);
-  testValidity(reviewText);
+  module.exports = createFormNewReview;
 })();
