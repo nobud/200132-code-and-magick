@@ -1,12 +1,14 @@
 'use strict';
 
 (function() {
+  var utils = require('./utils');
+
   /**
    * @const
    * @type {number}
    */
   var THROTTLE_DELAY = 100;
-  var lastCall = Date.now();
+
   //начало диапазона a в шкале [a; 1]
   var rangeStart = 0;
 
@@ -897,27 +899,29 @@
      */
     resetParallax: function() {
       var result = false;
-      if (Date.now() - lastCall >= THROTTLE_DELAY) {
-        var visibleGame = this.isVisibleElement(document.querySelector(
-          '.demo'));
-        var clouds = document.querySelector('.header-clouds');
-        var visibleClouds = this.isVisibleElement(clouds);
-        if (!visibleGame) {
-          game.setGameStatus(window.Game.Verdict.PAUSE);
-          //установить облака в начальную позицию
-          this.changePositionElement(0, clouds);
-        }
-        result = !visibleGame || !visibleClouds;
-        lastCall = Date.now();
+      var visibleGame = this.isVisibleElement(document.querySelector(
+        '.demo'));
+      var clouds = document.querySelector('.header-clouds');
+      var visibleClouds = this.isVisibleElement(clouds);
+      if (!visibleGame) {
+        game.setGameStatus(window.Game.Verdict.PAUSE);
+        //установить облака в начальную позицию
+        this.changePositionElement(0, clouds);
       }
+      result = !visibleGame || !visibleClouds;
       return result;
+    },
+
+    optimizedResetParallax: function() {
+      utils.throttle(this.resetParallax,
+        THROTTLE_DELAY, this);
     },
 
     /**
      * @private
      */
     _onscroll: function() {
-      if (!this.resetParallax()) {
+      if (!this.optimizedResetParallax()) {
         var currentTop = window.pageYOffset ||
           document.documentElement.scrollTop;
         //функция изменения позиции облаков
@@ -941,10 +945,15 @@
     }
   };
 
-  window.Game = Game;
-  window.Game.Verdict = Verdict;
+  var game;
+  var createGameProcess = function() {
+    window.Game = Game;
+    window.Game.Verdict = Verdict;
 
-  var game = new Game(document.querySelector('.demo'));
-  game.initializeLevelAndStart();
-  game.setGameStatus(window.Game.Verdict.INTRO);
+    game = new Game(document.querySelector('.demo'));
+    game.initializeLevelAndStart();
+    game.setGameStatus(window.Game.Verdict.INTRO);
+  };
+
+  module.exports = createGameProcess;
 })();
