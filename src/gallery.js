@@ -13,6 +13,8 @@
     '.overlay-gallery-preview');
   var CLASS_FULLSCREEN_PHOTO = 'fullscreen-image';
   var KEY_CODE_ESC = 27;
+  var KEY_CODE_PREV = 37;
+  var KEY_CODE_NEXT = 39;
 
   /**
    * @param {number} index
@@ -45,7 +47,7 @@
    */
   var _prevPhoto = function() {
     if (indexCurrentPhoto - 1 >= 0) {
-      indexCurrentPhoto -= indexCurrentPhoto;
+      indexCurrentPhoto = indexCurrentPhoto - 1;
     } else {
       indexCurrentPhoto = galleryPhotos.length - 1;
     }
@@ -68,9 +70,17 @@
    * @param {KeyboardEvent} evt [description]
    * @private
    */
-  var _onGallaryKeyDown = function(evt) {
-    if (evt.keyCode === KEY_CODE_ESC) {
-      hideGallery();
+  var _onDocumentKeyDown = function(evt) {
+    switch (evt.keyCode) {
+      case KEY_CODE_ESC:
+        hideGallery();
+        break;
+      case KEY_CODE_PREV:
+        _prevPhoto();
+        break;
+      case KEY_CODE_NEXT:
+        _nextPhoto();
+        break;
     }
   };
 
@@ -84,14 +94,14 @@
   var addEventListeners = function() {
     previous.addEventListener('click', _prevPhoto);
     next.addEventListener('click', _nextPhoto);
-    gallery.addEventListener('keydown', _onGallaryKeyDown);
+    document.addEventListener('keydown', _onDocumentKeyDown);
     closeGallary.addEventListener('click', _onCloseClick);
   };
 
   var deleteEventListeners = function() {
     previous.removeEventListener('click', _prevPhoto);
     next.removeEventListener('click', _nextPhoto);
-    gallery.removeEventListener('keydown', _onGallaryKeyDown);
+    document.removeEventListener('keydown', _onDocumentKeyDown);
     closeGallary.removeEventListener('click', _onCloseClick);
   };
 
