@@ -57,9 +57,34 @@
       data.description;
     reviewQuiz.innerHTML = '(' + data.review_usefulness +
       ')' + reviewQuiz.innerHTML;
-    container.appendChild(element);
     return element;
   };
 
-  module.exports = getReviewElement;
+  /**
+   * @param {Object} data
+   * @param {Element} container
+   * @constructor
+   */
+  var Review = function(data, container, templateToClone) {
+    this.data = data;
+    this.element = getReviewElement(this.data, container, templateToClone);
+    //var quizAnswer = element.querySelector('.review-quiz-answer');
+
+    this.onQuizClick = function(evt) {
+      var e = evt.target;
+      if (e.classList.contains('review-quiz-answer')) {
+        e.classList.add('review-quiz-answer-active');
+      }
+    };
+
+    this.remove = function() {
+      this.element.removeEventListener('click', this.onQuizClick);
+      this.element.parentNode.removeChild(this.element);
+    };
+
+    this.element.addEventListener('click', this.onQuizClick, true);
+    container.appendChild(this.element);
+  };
+
+  module.exports = Review;
 })();
