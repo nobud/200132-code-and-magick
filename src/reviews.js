@@ -3,7 +3,7 @@
 (function() {
   var utils = require('./utils');
   var load = require('./load');
-  var getReviewElement = require('./review');
+  var Review = require('./review');
   var filter = require('./filter');
 
   /** @type {HTMLElement} */
@@ -30,6 +30,9 @@
 
   /** @type {Array.<Object>} */
   var filteredReviews = [];
+
+  /** @type {Array.<Object>} */
+  var renderedReviews = [];
 
   /** @constant {number}*/
   var PAGE_SIZE = 3;
@@ -66,23 +69,25 @@
   var renderReviews = function(reviews, page, reset) {
     if (reset) {
       pageNumber = 0;
-      clearListReview();
+      renderedReviews.forEach(function(review) {
+        review.remove();
+      });
+      renderedReviews = [];
     }
+
     var from = page * PAGE_SIZE;
     var to = from + PAGE_SIZE;
     reviews.slice(from, to).forEach(function(review) {
-      getReviewElement(review, reviewsList, elementToClone);
+      renderedReviews.push(new Review(review, reviewsList,
+        elementToClone));
     });
+
     pageNumber++;
     if (isNextPageAvailable(reviews, pageNumber, PAGE_SIZE)) {
       moreReviews.classList.remove('invisible');
     } else {
       moreReviews.classList.add('invisible');
     }
-  };
-
-  var clearListReview = function() {
-    reviewsList.innerHTML = '';
   };
 
   /** обработчик изменения фильтра
