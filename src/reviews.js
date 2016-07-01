@@ -94,7 +94,9 @@
    * @param {string} filter
    */
   var setFilter = function(currentFilter) {
-    filteredReviews = filter.getFilteredReviews(allReviews, currentFilter);
+    var filterSet = true;
+    filteredReviews = filter.getFilteredReviews(allReviews, currentFilter,
+      filterSet);
     if (filteredReviews.length) {
       pageNumber = 0;
       renderReviews(filteredReviews, pageNumber, true);
@@ -127,13 +129,12 @@
       allReviews = loadedReviews;
       setFiltrationEnabled(true);
       if (allReviews.length) {
+        filter.getCountFilteredReviews(allReviews, formReviewsFilter);
         setFilter(filter.getDefaultFilter());
-        formReviewsFilter.querySelector('#' + filter.getDefaultFilter())
-          .checked =
-          true;
+        formReviewsFilter.querySelector('#' +
+          filter.getDefaultFilter()).checked = true;
         setMoreReviewsEnabled();
       }
-      filter.getCountFilteredReviews(allReviews, formReviewsFilter);
     }, reviewsList);
 
     formReviewsFilter.classList.remove('invisible');
