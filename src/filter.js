@@ -131,7 +131,8 @@
       var filterSet = false;
       for (var item in Filter) {
         if (Filter.hasOwnProperty(item)) {
-          var len = this.getFilteredReviews(reviews, Filter[item], false)
+          var len = this.getFilteredReviews(reviews, Filter[item],
+              filterSet)
             .length;
           var filterElement = containerElement.querySelector('label[for=' +
             Filter[item] + ']');
