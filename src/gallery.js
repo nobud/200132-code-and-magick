@@ -3,6 +3,10 @@
 (function() {
   /** @constructor */
   var Gallery = function() {
+    var utils = require('./utils');
+    var previewPhotos = require('./gallery-preview')();
+    var galleryPreview = document.querySelector('.photogallery');
+
     var self = this;
 
     this.element = document.querySelector('.overlay-gallery');
@@ -18,37 +22,11 @@
     var galleryPhotos = [];
     var indexCurrentPhoto = 0;
 
+    var PHOTO_LOCATION_HASH = 'photo';
     var CLASS_FULLSCREEN_PHOTO = 'fullscreen-image';
     var KEY_CODE_ESC = 27;
     var KEY_CODE_PREV = 37;
     var KEY_CODE_NEXT = 39;
-
-    /**
-     * @param {number} index
-     */
-    this._showPhoto = function(index) {
-      var photo = new Image();
-
-      photo.onload = function(evt) {
-        var image = self.element.querySelector('.' +
-          CLASS_FULLSCREEN_PHOTO);
-        image.src = evt.target.src;
-
-        var width = window.innerWidth;
-        var height = window.innerHeight;
-
-        image.width = width * 0.8;
-        if (image.height > 0.8 * height) {
-          image.style.width = 'auto';
-          image.height = 0.8 * height;
-        }
-      };
-
-      photo.src = galleryPhotos[index];
-      var numberPhoto = self.element.querySelector(
-        '.preview-number-current');
-      numberPhoto.textContent = index + 1;
-    };
 
     this._prevPhoto = function() {
       if (indexCurrentPhoto - 1 >= 0) {
@@ -56,7 +34,8 @@
       } else {
         indexCurrentPhoto = galleryPhotos.length - 1;
       }
-      self._showPhoto(indexCurrentPhoto);
+      utils.setLocationHash(PHOTO_LOCATION_HASH + '/' + galleryPhotos[
+        indexCurrentPhoto]);
     };
 
     this._nextPhoto = function() {
@@ -65,7 +44,8 @@
       } else {
         indexCurrentPhoto = 0;
       }
-      self._showPhoto(indexCurrentPhoto);
+      utils.setLocationHash(PHOTO_LOCATION_HASH + '/' + galleryPhotos[
+        indexCurrentPhoto]);
     };
 
     /**
@@ -75,7 +55,7 @@
     this._onDocumentKeyDown = function(evt) {
       switch (evt.keyCode) {
         case KEY_CODE_ESC:
-          self._hideGallery();
+          utils.setLocationHash('');
           break;
         case KEY_CODE_PREV:
           self._prevPhoto();
@@ -90,7 +70,7 @@
      * @private
      */
     this._onCloseClick = function() {
-      self._hideGallery();
+      utils.setLocationHash('');
     };
 
     this._addEventListeners = function() {
@@ -108,24 +88,111 @@
     };
 
     this._hideGallery = function() {
-      self._deleteEventListeners();
-      self.element.classList.add('invisible');
+      if (!self.element.classList.contains('invisible')) {
+        self._deleteEventListeners();
+        self.element.classList.add('invisible');
+      }
     };
 
     /**
-     * @param {number} startIndexPhoto
+     * @param {string} src
+     * @param {number}
      */
-    this.showGallery = function(startIndexPhoto) {
-      self._addEventListeners();
-      indexCurrentPhoto = startIndexPhoto;
-      var image = self.element.querySelector('.' + CLASS_FULLSCREEN_PHOTO);
-      if (!image) {
-        var photo = document.createElement('img');
-        photo.className = CLASS_FULLSCREEN_PHOTO;
-        fullScreenPhotoContainer.appendChild(photo);
+    this._getNumberPhoto = function(src) {
+      return galleryPhotos.indexOf(src);
+    };
+
+    /**
+     * @param {number/string} pic
+     */
+    this._showPhoto = function(pic) {
+      var photo = new Image();
+
+      photo.onload = function(evt) {
+        var image = self.element.querySelector('.' +
+          CLASS_FULLSCREEN_PHOTO);
+        image.src = evt.target.src;
+
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+
+        image.width = width * 0.8;
+        if (image.height > 0.8 * height) {
+          image.style.width = 'auto';
+          image.height = 0.8 * height;
+        }
+      };
+
+      var src = '';
+
+      if (typeof pic === 'number') {
+        src = galleryPhotos[pic];
+        indexCurrentPhoto = pic;
+      } else {
+        if (typeof pic === 'string') {
+          src = pic;
+          indexCurrentPhoto = self._getNumberPhoto(src);
+        }
       }
-      self._showPhoto(startIndexPhoto);
-      self.element.classList.remove('invisible');
+
+      if (indexCurrentPhoto > -1) {
+        photo.src = src;
+        var numberPhoto = self.element.querySelector(
+          '.preview-number-current');
+        numberPhoto.textContent = indexCurrentPhoto + 1;
+      }
+    };
+
+    this._restoreFromHash = function() {
+      var hash = location.hash;
+      if (hash === '') {
+        self._hideGallery();
+        return;
+      }
+      var founds = hash.match(/#photo\/(\S+)/);
+      if (founds && founds.length > 1) {
+        var srcPhoto = founds[1];
+        self.showGallery(srcPhoto);
+      }
+    };
+
+    this._onHashChange = function() {
+      self._restoreFromHash();
+    };
+
+    this._showFullScreenPhoto = function(src) {
+      utils.setLocationHash(PHOTO_LOCATION_HASH + '/' + src);
+    };
+
+    this._previewClick = function(evt) {
+      evt.preventDefault();
+      if (evt.target.tagName === 'IMG') {
+        var src = evt.target.currentSrc;
+        var tail = src.substr(src.indexOf('\/img\/') + 1);
+        self._showFullScreenPhoto(tail);
+      }
+    };
+
+    this._setEventListenerPreviewClick = function() {
+      galleryPreview.addEventListener('click', self._previewClick);
+    };
+
+    /**
+     * @param {number/string} startPhoto
+     */
+    this.showGallery = function(startPhoto) {
+      if (self.element.classList.contains('invisible')) {
+        self._addEventListeners();
+        var image = self.element.querySelector('.' +
+          CLASS_FULLSCREEN_PHOTO);
+        if (!image) {
+          var photo = document.createElement('img');
+          photo.className = CLASS_FULLSCREEN_PHOTO;
+          fullScreenPhotoContainer.appendChild(photo);
+        }
+        self.element.classList.remove('invisible');
+      }
+      self._showPhoto(startPhoto);
     };
 
     /**
@@ -136,6 +203,13 @@
       var previewCount = self.element.querySelector(
         '.preview-number-total');
       previewCount.textContent = photos.length;
+    };
+
+    this.initGallery = function() {
+      self.savePhotos(previewPhotos);
+      self._setEventListenerPreviewClick();
+      window.addEventListener('hashchange', self._onHashChange);
+      self._restoreFromHash();
     };
   };
 
