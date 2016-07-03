@@ -10,6 +10,8 @@
     'POPULAR': 'reviews-popular'
   };
 
+  var LOCAL_STORAGE_FILTER_KEY = 'filter';
+
   /** @constant {Filter} */
   var DEFAULT_FILTER = Filter.ALL;
 
@@ -18,6 +20,8 @@
 
   /** @constant {string} */
   var CLASS_FILTER_DISABLED = 'reviews-filter-item-disabled';
+
+  var currentFilter;
 
 
   var setDisabilityEmptyFilter = function(filterElement, disabled) {
@@ -36,9 +40,17 @@
       '</sup>';
   };
 
+  var getLastFilter = function(key) {
+    return localStorage.getItem(key);
+  };
+
+  var setLastFilter = function(key, value) {
+    localStorage.setItem(key, value);
+  };
+
   module.exports = {
     getDefaultFilter: function() {
-      return DEFAULT_FILTER;
+      return getLastFilter(LOCAL_STORAGE_FILTER_KEY) || DEFAULT_FILTER;
     },
 
     /**
@@ -57,8 +69,9 @@
     /**
      * @param {Array.<Object>} reviews
      * @param {string} filter
+     * @param {bool} setFilter
      */
-    getFilteredReviews: function(reviews, filter) {
+    getFilteredReviews: function(reviews, filter, setFilter) {
       var reviewsToFilter = reviews.slice(0);
       switch (filter) {
         case Filter.RECENT:
@@ -102,6 +115,11 @@
         default:
           break;
       }
+      if (setFilter && currentFilter !== filter) {
+        setLastFilter(LOCAL_STORAGE_FILTER_KEY, filter);
+        currentFilter = filter;
+      }
+
       return reviewsToFilter;
     },
 
@@ -110,9 +128,12 @@
      * @param {HTMLElement} containerElement
      */
     getCountFilteredReviews: function(reviews, containerElement) {
+      var filterSet = false;
       for (var item in Filter) {
         if (Filter.hasOwnProperty(item)) {
-          var len = this.getFilteredReviews(reviews, Filter[item]).length;
+          var len = this.getFilteredReviews(reviews, Filter[item],
+              filterSet)
+            .length;
           var filterElement = containerElement.querySelector('label[for=' +
             Filter[item] + ']');
           setFilterCountResults(filterElement, len);
