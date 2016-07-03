@@ -51,6 +51,10 @@
         }
         return result;
       };
+    },
+
+    setLocationHash: function(value) {
+      location.hash = value;
     }
   };
 })();
