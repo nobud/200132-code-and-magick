@@ -913,8 +913,8 @@
     },
 
     optimizedResetParallax: function() {
-      utils.throttle(this.resetParallax,
-        THROTTLE_DELAY, this);
+      return utils.throttle(this.resetParallax,
+        THROTTLE_DELAY, this)();
     },
 
     /**
