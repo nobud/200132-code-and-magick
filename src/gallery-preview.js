@@ -7,7 +7,8 @@
       '.photogallery-image img');
     var previewPhotos = [];
     for (var i = 0; i < previews.length; i++) {
-      previewPhotos.push(previews[i].src);
+      var src = previews[i].src;
+      previewPhotos.push(src.substr(src.indexOf('\/img\/') + 1));
     }
     return previewPhotos;
   };
