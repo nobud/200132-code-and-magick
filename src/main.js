@@ -4,11 +4,5 @@
   require('./reviews')();
   require('./form')();
   require('./game')();
-  var gallery = require('./gallery');
-
-  var init = function() {
-    gallery.initGallery();
-  };
-
-  init();
+  require('./gallery');
 })();
