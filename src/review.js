@@ -2,6 +2,9 @@
 
 (function() {
 
+  var BaseComponent = require('./base');
+  var utils = require('./utils');
+
   /**
    * @param {Object} data
    * @param {Element} container
@@ -11,23 +14,34 @@
     this.data = data;
     var getReviewElement = require('./getReviewElement');
     this.element = getReviewElement(this.data, container, templateToClone);
+    this.container = container;
+    this._onQuizClick = this._onQuizClick.bind(this);
 
-    Review.prototype.onQuizClick = function(evt) {
-      var e = evt.target;
-      if (e.classList.contains('review-quiz-answer')) {
-        e.classList.add('review-quiz-answer-active');
-      }
-    };
+    this.init();
+  };
+  utils.inherit(BaseComponent, Review);
 
-    Review.prototype.remove = function() {
-      this.element.removeEventListener('click', this.onQuizClick);
-      this.element.parentNode.removeChild(this.element);
-    };
+  Review.prototype._setEventListeners = function() {
+    this.element.addEventListener('click', this._onQuizClick, true);
+  };
 
-    this.onQuizClick = this.onQuizClick.bind(this);
+  Review.prototype._removeEventListeners = function() {
+    this.element.removeEventListener('click', this._onQuizClick);
+  };
 
-    this.element.addEventListener('click', this.onQuizClick, true);
-    container.appendChild(this.element);
+  Review.prototype.init = function() {
+    BaseComponent.prototype.init.call(this);
+  };
+
+  Review.prototype._onQuizClick = function(evt) {
+    var e = evt.target;
+    if (e.classList.contains('review-quiz-answer')) {
+      e.classList.add('review-quiz-answer-active');
+    }
+  };
+
+  Review.prototype.remove = function() {
+    BaseComponent.prototype.remove.call(this, this.element);
   };
 
   module.exports = Review;

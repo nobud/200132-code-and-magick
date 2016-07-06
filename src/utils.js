@@ -4,6 +4,10 @@
 
   var lastCall = Date.now();
 
+  var EmptyCtor = function() {
+
+  };
+
   module.exports = {
 
     /**
@@ -55,6 +59,11 @@
 
     setLocationHash: function(value) {
       location.hash = value;
+    },
+
+    inherit: function(Parent, Child) {
+      EmptyCtor.prototype = Parent.prototype;
+      Child.prototype = new EmptyCtor();
     }
   };
 })();

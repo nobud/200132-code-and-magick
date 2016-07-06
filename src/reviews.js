@@ -55,10 +55,19 @@
     return page < Math.ceil(reviews.length / pageSize);
   };
 
-  var setMoreReviewsEnabled = function() {
-    moreReviews.addEventListener('click', function() {
-      renderReviews(filteredReviews, pageNumber);
-    });
+  var onMoreReviews = function() {
+    renderReviews(filteredReviews, pageNumber);
+  };
+
+  /**
+   * @param {isVisible} -
+   */
+  var setMoreReviewsEnabled = function(isVisible) {
+    if (isVisible) {
+      moreReviews.addEventListener('click', onMoreReviews);
+    } else {
+      moreReviews.removeEventListener('click', onMoreReviews);
+    }
   };
 
   /**
@@ -83,11 +92,14 @@
     });
 
     pageNumber++;
-    if (isNextPageAvailable(reviews, pageNumber, PAGE_SIZE)) {
+    var showMoreReviews = isNextPageAvailable(reviews, pageNumber,
+      PAGE_SIZE);
+    if (showMoreReviews) {
       moreReviews.classList.remove('invisible');
     } else {
       moreReviews.classList.add('invisible');
     }
+    setMoreReviewsEnabled(showMoreReviews);
   };
 
   /** обработчик изменения фильтра
@@ -127,13 +139,12 @@
 
     load(function(loadedReviews) {
       allReviews = loadedReviews;
-      setFiltrationEnabled(true);
       if (allReviews.length) {
+        setFiltrationEnabled();
         filter.getCountFilteredReviews(allReviews, formReviewsFilter);
         setFilter(filter.getDefaultFilter());
         formReviewsFilter.querySelector('#' +
           filter.getDefaultFilter()).checked = true;
-        setMoreReviewsEnabled();
       }
     }, reviewsList);
 
