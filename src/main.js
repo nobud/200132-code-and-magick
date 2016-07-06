@@ -1,5 +1,14 @@
 'use strict';
 
-require('./reviews');
-require('./form');
-require('./game');
+(function() {
+  require('./reviews')();
+  require('./form')();
+  require('./game')();
+  var gallery = require('./gallery');
+
+  var init = function() {
+    gallery.initGallery();
+  };
+
+  init();
+})();
