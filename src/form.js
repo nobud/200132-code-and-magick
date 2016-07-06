@@ -68,6 +68,10 @@
     controlsTextWarning[controlInvalid.name] = controlWarning;
   };
 
+  var removeControlTextWarning = function(controlInvalid) {
+    controlInvalid.parentNode.removeChild(controlInvalid);
+  };
+
   //показать сообщение textMessage о невалидности поля controlInvalidName
   var showMessageValidity = function(controlInvalidName, textMessage) {
     controlsTextWarning[controlInvalidName].textContent = textMessage;
@@ -133,52 +137,76 @@
   };
 
   //обработчик изменения оценки
-  var changeMark = function(evt) {
-    currentMark = evt.target.value;
-    setReviewTextConstraint();
+  var onMarkChange = function(evt) {
+    if (evt.target.name === 'review-mark') {
+      currentMark = evt.target.value;
+      setReviewTextConstraint();
+      setVisibilityFieldRequiredText();
+      testValidity(reviewText);
+    }
+  };
+
+  var onInputName = function(evt) {
+    setVisibilityFieldRequiredName();
+    testValidity(evt.target);
+  };
+
+  var onInputText = function(evt) {
     setVisibilityFieldRequiredText();
-    testValidity(reviewText);
+    testValidity(evt.target);
+  };
+
+  var onSubmit = function() {
+    setFormCookies(new Date(Date.now() + getPeriodToExpireCookie()));
+  };
+
+  var onClickFormShow = function(evt) {
+    evt.preventDefault();
+    initFormNewReview();
+    formContainer.classList.remove('invisible');
+  };
+
+  var onCloseClick = function(evt) {
+    evt.preventDefault();
+    removeEventListeners();
+    for (var item in controlsTextWarning) {
+      if (controlsTextWarning.hasOwnProperty(item)) {
+        removeControlTextWarning(controlsTextWarning[item]);
+      }
+    }
+    formContainer.classList.add('invisible');
   };
 
   var setEventListeners = function() {
     // назначение обработчика события onchange для оценок
-    groupReviewMarks.addEventListener('change', function(evt) {
-      if (evt.target.name === 'review-mark') {
-        changeMark(evt);
-      }
-    });
+    groupReviewMarks.addEventListener('change', onMarkChange);
 
     //назначение обработчика события oninput поля ввода имени пользователя
-    reviewName.addEventListener('input', function(evt) {
-      setVisibilityFieldRequiredName();
-      testValidity(evt.target);
-    });
+    reviewName.addEventListener('input', onInputName);
 
     //назначение обработчика события oninput поля ввода отзыва
-    reviewText.addEventListener('input', function(evt) {
-      setVisibilityFieldRequiredText();
-      testValidity(evt.target);
-    });
+    reviewText.addEventListener('input', onInputText);
 
     //назначение обработчика события onsubmit для формы
-    reviewForm.addEventListener('submit', function() {
-      setFormCookies(new Date(Date.now() + getPeriodToExpireCookie()));
-    });
-
-    //назначение обработчика события onclick для кнопки, показавающей форму заполнения отзыва
-    formOpenButton.addEventListener('click', function(evt) {
-      evt.preventDefault();
-      formContainer.classList.remove('invisible');
-    });
+    reviewForm.addEventListener('submit', onSubmit);
 
     //назначение обработчика события onclick для кнопки закрытия формы
-    formCloseButton.addEventListener('click', function(evt) {
-      evt.preventDefault();
-      formContainer.classList.add('invisible');
-    });
+    formCloseButton.addEventListener('click', onCloseClick);
   };
 
-  var createFormNewReview = function() {
+  var removeEventListeners = function() {
+    groupReviewMarks.removeEventListener('change', onMarkChange);
+
+    reviewName.removeEventListener('input', onInputName);
+
+    reviewText.removeEventListener('input', onInputText);
+
+    reviewForm.removeEventListener('submit', onSubmit);
+
+    formCloseButton.removeEventListener('click', onCloseClick);
+  };
+
+  var initFormNewReview = function() {
     setEventListeners();
 
     //получить имя пользователя из cookies
@@ -200,5 +228,10 @@
     testValidity(reviewText);
   };
 
-  module.exports = createFormNewReview;
+  var initOnClickFormShow = function() {
+    //назначение обработчика события onclick для кнопки, показавающей форму заполнения отзыва
+    formOpenButton.addEventListener('click', onClickFormShow);
+  };
+
+  module.exports = initOnClickFormShow;
 })();
