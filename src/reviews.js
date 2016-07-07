@@ -3,6 +3,7 @@
 (function() {
   var utils = require('./utils');
   var load = require('./load');
+  var ReviewData = require('./reviewData');
   var Review = require('./review');
   var filter = require('./filter');
 
@@ -87,8 +88,8 @@
     var from = page * PAGE_SIZE;
     var to = from + PAGE_SIZE;
     reviews.slice(from, to).forEach(function(review) {
-      renderedReviews.push(new Review(review, reviewsList,
-        elementToClone));
+      renderedReviews.push(new Review(elementToClone, reviewsList,
+        new ReviewData(review)));
     });
 
     pageNumber++;
