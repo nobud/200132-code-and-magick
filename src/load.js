@@ -6,7 +6,7 @@
   var LOAD_TIMEOUT = 10000;
 
   /** @constant {string} */
-  var REVIEWS_LOAD_URL = 'http://o0.github.io/assets/json/reviews.json';
+  var REVIEWS_LOAD_URL = 'https://o0.github.io/assets/json/reviews.json';
 
   /** @constant {string} */
   var CLASS_REVIEW_LIST_LOADING = 'reviews-list-loading';
